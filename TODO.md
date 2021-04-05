@@ -1,0 +1,5 @@
+- Card encoding
+- Card-tet encoding
+- Board encoding
+- Time state encoding
+- Row clearing encoding
