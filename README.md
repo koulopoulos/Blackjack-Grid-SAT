@@ -1,21 +1,26 @@
-Blackjack Grid SAT Checker
+# Blackjack Grid Solver
 
-Given N card-tets, can the game be won?
 
-Testing
 
 `python -m unittest test.test_main`
 
 Sources:
-1. https://davefernig.com/2018/05/07/solving-sat-in-python/
+1. https://play.gamezop.com/p/gamepage/SyIZjp3GulZ
 
-```
-# literal
-("p", True)
 
-# disjunctive clause (x1 v x2 v ~x3) [1]
-{("x1", True), ("x2", True), ("x3", False)}
+# TODO
+- Card encoding
+- Card-tet encoding
+- Board encoding
+- Time state encoding
+- Row clearing encoding
 
-# conjunctive clause (x1 v x2 v ~x3) ^ (~x1 v ~x2 v ~x3) [1]
-[{("x1", True), ("x2", True)}, {("x1", False), ("x2", False)}]
-```
+- given some amount of card tets, can you get to the point where 
+- you were able to place all the card tets down 
+
+- LTL
+- Bin packing problem (knapsack problem?)
+
+- what is a valid move (encoding)
+
+- Given n number of card tets, can we make a row/col go to 21?
