@@ -1,7 +1,5 @@
 # Blackjack Grid Solver
 
-
-
 `python -m unittest test.test_main`
 
 Sources:

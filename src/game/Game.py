@@ -5,7 +5,7 @@ from .Tet import Tet
 class Game:
     """To represent a game of Blackjack Grid
 
-    Fields:
+    Properties:
         rand: random number generator
         cards: the set of cards with which this game is played
         shapes: the set of tet shapes that are used in this game
@@ -34,9 +34,11 @@ class Game:
             # O-tet
             {(0, 0), (1, 0), (0, 1), (1, 1)}]
         self.board = Board(size)
-        self.tets = self.generate_tets(n_tets)
+        self.tets = self.init_tets(n_tets)
 
-    def generate_tets(self, n_tets):
+    def init_tets(self, n_tets):
+        """
+        """
         tets = []
         for n in range(n_tets):
             tets.append(Tet(self.cards, self.shapes, self.rand))
