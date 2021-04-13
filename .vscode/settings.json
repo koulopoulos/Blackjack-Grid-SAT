@@ -3,5 +3,12 @@
     "files.exclude": {
         "**/__pycache__": true
     },
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "cSpell.ignoreWords": [
+        "imot",
+        "nums",
+        "relu",
+        "timeit",
+        "zfill"
+    ]
 }

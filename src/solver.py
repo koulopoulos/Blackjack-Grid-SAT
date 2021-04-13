@@ -1,6 +1,7 @@
 import numpy as np
 from z3 import *
 from random import Random
+import timeit
 
 CARD_VAL = {
     0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 
@@ -21,101 +22,105 @@ CARD_NUM = {
 }
 
 
+
 # restrict every board cell between [0, 13]
-def cells_c(board, board_size, n_tets):
+def cells_c(board, board_size):
     cells_c = []
     for y in range(board_size):
         for x in range(board_size):
-            for z in range(n_tets):
-                cells_c.append(And(0 <= board[z][y][x], board[z][y][x] <= 10))
+            cells_c.append(
+                And(0 <= board[y][x], 
+                    board[y][x] <= 13))
     return cells_c
 
 
-# parse user input as tet (card) vars
+
+# generate tet clauses
 def tets_c(tets, board, board_size):
     tets_c = []
+    tets_c.append(distinct_c(tets))
     for z in range(len(tets)):
         tets_c.append(tet_c(tets[z], z, board, board_size))
     return And(tets_c)
 
 
-# only one card can exist in one cell
-def distinct_c():
-    distinct_c = []
-    for z in range(len(tets)):
-        for i in range(len(tets[z])):
-            cx = f"{tets[z][i]}.{z}.x__{i%2}_{i//2}" # repr.z.x__dx_dy
-            cy = f"{tets[z][i]}.{z}.y__{i%2}_{i//2}" # repr.z.y__dx_dy
 
-
-# clause: every card in a tet must have a valid (x,y) location on the board
-#           a valid (x, y) implies the card value should be located at that location
-#           all cards in a tet are placed relative to each other
+# generate individual tet clause
 def tet_c(tet, z, board, board_size):
-    t_c = []
-
+    tet_c = []
     # individual card clauses
     for i in range(len(tet)):
         if tet[i] != '0':
-            card_c = []
-
-            cx = f"{tet[i]}.{z}.x__{i%2}_{i//2}" # repr.z.x__dx_dy
-            cy = f"{tet[i]}.{z}.y__{i%2}_{i//2}" # repr.z.y__dx_dy
-            
-            # card x-value should be within [0, 5]
-            card_c.append(And(0 <= Int(cx), Int(cx) <= board_size - 1))
-            # card y-value should be within [0, 5]
-            card_c.append(And(0 <= Int(cy), Int(cy) <= board_size - 1))
-
-            # link card (x, y) to board (x, y)
-            for y in range(board_size):
-                for x in range(board_size):
-                    card_c.append(
-                        Implies(
-                            And(Int(cx) == x, Int(cy) == y),
-                            And(board[z][y][x] == CARD_NUM[tet[i]])))
-                                
-            t_c.append(And(card_c))
-
-    # TODO generate this dynamically
-    t_c.append(
-        And(# associated cards should be place relatively
-            Int(f"{tet[0]}.{z}.x__0_0") == Int(f"{tet[1]}.{z}.x__1_0") - 1,
-            Int(f"{tet[0]}.{z}.y__0_0") == Int(f"{tet[1]}.{z}.y__1_0"),
-            Int(f"{tet[0]}.{z}.x__0_0") == Int(f"{tet[2]}.{z}.x__0_1"),
-            Int(f"{tet[0]}.{z}.y__0_0") == Int(f"{tet[2]}.{z}.y__0_1") - 1,
-            Int(f"{tet[0]}.{z}.x__0_0") == Int(f"{tet[3]}.{z}.x__1_1") - 1,
-            Int(f"{tet[0]}.{z}.y__0_0") == Int(f"{tet[3]}.{z}.y__1_1") - 1,
-        ))
-
-    return And(t_c)
+            tet_c.append(
+                And(range_c(tet[i], z, i, board_size), 
+                    assignment_c(tet[i], z, i, board_size)))
+    tet_c.append(relative_c(tet, z, board_size))
+    return And(tet_c)
 
 
-# clause: there cannot exist a collision between tets in the z-index
-def collision_c(board, len_board, n_tets):
-    collision_c = []
-    for y in range(len_board):
-        for x in range(len_board):
-            for tz in range(n_tets):
-                for z in range(n_tets):
-                    if tz != z:
-                        collision_c.append(Implies(board[tz][y][x] != 0, board[z][y][x] == 0))
-    return And(collision_c)
+
+# generate card index var
+def idx_var(c, z, i):
+    return Int(f"{c}.{z}.idx__{i%2}_{i//2}")
+
+
+
+# every card index must be distinct
+def distinct_c(tets):
+    idx_c = []
+    for z in range(len(tets)):
+        for i in range(len(tets[z])):
+            idx_c.append(idx_var(tets[z][i], z, i))
+    return Distinct(idx_c)
+
+
+
+# card index should be within [0, board_size**2 - 1]
+def range_c(rep, z, i, board_size):
+    return And(0 <= idx_var(rep, z, i), idx_var(rep, z, i) <= board_size**2 - 1)
+
+
+
+# card index implies card value at board index
+def assignment_c(rep, z, i, board_size):
+    assignment_c = []
+    for j in range(board_size**2):
+        assignment_c.append(
+            Implies(idx_var(rep, z, i) == j, 
+                    And(board[j//board_size][j%board_size] == CARD_NUM[rep])))
+    return And(assignment_c)
+
+
+
+# cards in a tet should be placed relative to each other
+def relative_c(tet, z, board_size):
+    return And(
+            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 1) - 1,
+            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 2) - board_size,
+            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 3) - board_size - 1)
+
 
 
 # clause: a row or column must sum to 21
 def blackjack_c(board, board_size, n_tets):
     blackjack_c = []
-    for z in range(n_tets):
-        for y in range(board_size):
-            blackjack_c.append(Or(
-                sum([board[z][y][x] for x in range(board_size)]) == 21,
-                sum([board[z][x][y] for x in range(board_size)]) == 21
-            ))
+    for y in range(board_size):
+        for x in range(board_size):
+            blackjack_c.append(
+                Or(sum([board[y][x] for x in range(board_size)]) == 21,
+                   sum([board[x][y] for x in range(board_size)]) == 21))
     return Or(blackjack_c)
 
 
+
 if __name__ == "__main__":
+
+    # PRIORITY TODO
+    # TODO PREVENT ROW WRAPPING
+    # TODO DEFAULT CELLS TO 0 IF UNASSIGNED
+    # TODO FACE CARDS SHOULD BE VALUED AT 10
+    # TODO RUNS FOREVER WITH 9 SQUARE TETS
+
     BOARD_SIZE = 6
 
     tets = []
@@ -123,38 +128,22 @@ if __name__ == "__main__":
     n = int(input())
     for _ in range(n):
         tets.append(str(input()))
+    
+    start = timeit.default_timer()
 
-    board = [[[Int(f"b_{x}_{y}_{z}") for x in range(BOARD_SIZE)]
-                                     for y in range(BOARD_SIZE)]
-                                     for z in range(len(tets))]
+    board = [[Int(f"b_{x}_{y}") for x in range(BOARD_SIZE)]
+                                for y in range(BOARD_SIZE)]
 
     s = Solver()
-    s.add(cells_c(board, BOARD_SIZE, len(tets)))
+    s.add(cells_c(board, BOARD_SIZE))
     s.add(tets_c(tets, board, BOARD_SIZE))
-    s.add(collision_c(board, BOARD_SIZE, len(tets)))
-    s.add(blackjack_c(board, BOARD_SIZE, len(tets)))
+    #s.add(blackjack_c(board, BOARD_SIZE, len(tets)))
 
     if s.check() == sat:
+        stop = timeit.default_timer()
         m = s.model()
-        board_repr = []
-
-        for y in range(BOARD_SIZE):
-            row = []
-            for x in range(BOARD_SIZE):
-                row.append(CARD_REPR[sum([m.evaluate(board[z][y][x]).as_long() 
-                                        for z in range(len(tets))])])
-            board_repr.append(row)
-
-        print(np.array(board_repr))
-
-
-
-# DONE?
-# TODO collision detection
-# TODO 'ghost cards'
-
-# NOT DONE
-# TODO infinite loop / not running with 9 tets
-# TODO face cards should be 10
-# TODO default empty cells to 0 if not assigned
-
+        print(np.array(
+            [[CARD_REPR[m.evaluate(board[y][x]).as_long()] 
+                for x in range(BOARD_SIZE)]
+                for y in range(BOARD_SIZE)]))
+        print(f"Runtime: {stop - start}s")
