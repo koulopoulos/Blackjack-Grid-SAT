@@ -22,128 +22,114 @@ CARD_NUM = {
 }
 
 
-
-# restrict every board cell between [0, 13]
-def cells_c(board, board_size):
-    cells_c = []
-    for y in range(board_size):
-        for x in range(board_size):
-            cells_c.append(
-                And(0 <= board[y][x], 
-                    board[y][x] <= 13))
-    return cells_c
+# generates the board cell vars
+def board_v(board_size):
+    return [Int(f"b_{i}") for i in range(board_size**2)]
 
 
-
-# generate tet clauses
-def tets_c(tets, board, board_size):
-    tets_c = []
-    tets_c.append(distinct_c(tets))
-    for z in range(len(tets)):
-        tets_c.append(tet_c(tets[z], z, board, board_size))
-    return And(tets_c)
-
-
-
-# generate individual tet clause
-def tet_c(tet, z, board, board_size):
-    tet_c = []
-    # individual card clauses
-    for i in range(len(tet)):
-        if tet[i] != '0':
-            tet_c.append(
-                And(range_c(tet[i], z, i, board_size), 
-                    assignment_c(tet[i], z, i, board_size)))
-    tet_c.append(relative_c(tet, z, board_size))
-    return And(tet_c)
-
-
-
-# generate card index var
-def idx_var(c, z, i):
+# generates a card index var
+def card_v(c, z, i):
     return Int(f"{c}.{z}.idx__{i%2}_{i//2}")
 
 
+# restrict every board cell between [0, 13]
+def board_c(board, board_size):
+    return [And(0 <= board[i], board[i] <= 13) for i in range(board_size**2)]
+
+
+# generates tet clauses
+def tets_c(tets, board, board_size):
+    return And([tet_c(tets[z], z, board, board_size) for z in range(len(tets))])
+
+
+# generates an individual tet clause
+def tet_c(tet, z, board, board_size):
+    c = []
+    for i in range(len(tet)):
+        if tet[i] != '0':
+            c.append(range_c(tet[i], z, i, board_size))
+            c.append(assignment_c(tet[i], z, i, board_size))
+    c.append(relative_c(board, board_size, tet, z))
+    return And(c)
+
 
 # every card index must be distinct
-def distinct_c(tets):
-    idx_c = []
+def distinct_index_c(tets):
+    c = []
     for z in range(len(tets)):
         for i in range(len(tets[z])):
-            idx_c.append(idx_var(tets[z][i], z, i))
-    return Distinct(idx_c)
+            c.append(card_v(tets[z][i], z, i))
+    return Distinct(c)
 
 
-
-# card index should be within [0, board_size**2 - 1]
+# card index should be within [0, len(board)**2 - 1]
 def range_c(rep, z, i, board_size):
-    return And(0 <= idx_var(rep, z, i), idx_var(rep, z, i) <= board_size**2 - 1)
-
+    return And(0 <= card_v(rep, z, i), card_v(rep, z, i) <= board_size**2 - 1)
 
 
 # card index implies card value at board index
 def assignment_c(rep, z, i, board_size):
-    assignment_c = []
-    for j in range(board_size**2):
-        assignment_c.append(
-            Implies(idx_var(rep, z, i) == j, 
-                    And(board[j//board_size][j%board_size] == CARD_NUM[rep])))
-    return And(assignment_c)
-
+    return And([Implies(card_v(rep, z, i) == j, board[j] == CARD_NUM[rep])
+                    for j in range(board_size**2)])
 
 
 # cards in a tet should be placed relative to each other
-def relative_c(tet, z, board_size):
-    return And(
-            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 1) - 1,
-            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 2) - board_size,
-            idx_var(tet[0], z, 0) == idx_var(tet[0], z, 3) - board_size - 1)
-
+def relative_c(board, board_size, tet, z):
+    return And(card_v(tet[0], z, 0) == card_v(tet[1], z, 1) - 1,
+               card_v(tet[0], z, 0) == card_v(tet[2], z, 2) - board_size,
+               card_v(tet[0], z, 0) == card_v(tet[3], z, 3) - board_size - 1)
 
 
 # clause: a row or column must sum to 21
-def blackjack_c(board, board_size, n_tets):
-    blackjack_c = []
-    for y in range(board_size):
-        for x in range(board_size):
-            blackjack_c.append(
-                Or(sum([board[y][x] for x in range(board_size)]) == 21,
-                   sum([board[x][y] for x in range(board_size)]) == 21))
-    return Or(blackjack_c)
+def blackjack_c(board, board_size):
+    c = []
+    for i in range(board_size):
+        c.append(
+            Or(sum([board[i+board_size*j] for j in range(board_size)]) == 21,
+               sum([board[i*board_size+j] for j in range(board_size)]) == 21))
+    return Or(c)
 
+
+# renders the board to the console
+def render_board(board):
+    print(np.array(
+        [[CARD_REPR[m.evaluate(board[i+j*board_size]).as_long()]
+            for i in range(board_size)]
+            for j in range(board_size)]))
+
+
+# receives user input for the board size and tets
+def input_tets():
+    tets = []
+    print("Input the board size:")
+    board_size = int(input())
+    print("Input the number of tets for the game:")
+    n_tets = int(input())
+    print("Input the tets (Use 0 for no card and X for 10)")
+    for _ in range(n_tets):
+        tets.append(str(input()))
+    return board_size, n_tets, tets
 
 
 if __name__ == "__main__":
 
-    # PRIORITY TODO
-    # TODO PREVENT ROW WRAPPING
-    # TODO DEFAULT CELLS TO 0 IF UNASSIGNED
-    # TODO FACE CARDS SHOULD BE VALUED AT 10
-    # TODO RUNS FOREVER WITH 9 SQUARE TETS
+    # get user input
+    board_size, n_tets, tets = input_tets()
 
-    BOARD_SIZE = 6
+    # setup board 
+    board = board_v(board_size)
 
-    tets = []
-    print("Input the number of tets for the game:")
-    n = int(input())
-    for _ in range(n):
-        tets.append(str(input()))
-    
-    start = timeit.default_timer()
-
-    board = [[Int(f"b_{x}_{y}") for x in range(BOARD_SIZE)]
-                                for y in range(BOARD_SIZE)]
-
+    # add clauses to solver
     s = Solver()
-    s.add(cells_c(board, BOARD_SIZE))
-    s.add(tets_c(tets, board, BOARD_SIZE))
-    #s.add(blackjack_c(board, BOARD_SIZE, len(tets)))
+    s.add(board_c(board, board_size))
+    s.add(tets_c(tets, board, board_size))
+    s.add(distinct_index_c(tets))
+    s.add(blackjack_c(board, board_size))
 
+    # solve
+    start = timeit.default_timer()
     if s.check() == sat:
         stop = timeit.default_timer()
         m = s.model()
-        print(np.array(
-            [[CARD_REPR[m.evaluate(board[y][x]).as_long()] 
-                for x in range(BOARD_SIZE)]
-                for y in range(BOARD_SIZE)]))
+        render_board(board)
         print(f"Runtime: {stop - start}s")

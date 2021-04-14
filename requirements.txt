@@ -1,2 +1,5 @@
 numpy
+random
+timeit
 z3
+z3-solver
