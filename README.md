@@ -46,18 +46,18 @@ In Blackjack Grid, a player places tetromino-like clusters of traditional playin
 > AAAA
 > K900
 
-> [['A' 'A' '0' '0' '0' '0']
->  ['A' 'A' 'K' '9' '0' '0']
->  ['0' '0' '0' '0' '0' '0']
+> [['0' '0' '0' '0' '0' '0']
+>  ['0' '0' 'A' 'A' '0' '0']
+>  ['K' '9' 'A' 'A' '0' '0']
 >  ['0' '0' '0' '0' '0' '0']
 >  ['0' '0' '0' '0' '0' '0']
 >  ['0' '0' '0' '0' '0' '0']]
 ```
 
 ## Known Bugs
-* Card-tets can wrap across one edge of the board to the other.
-* Cells are not restricted to 0 if unassigned by a tet.
-* The Blackjack clause uses the card ID instead of value.
+* ~~Card-tets can wrap across one edge of the board to the other.~~
+* ~~Cells are not restricted to 0 if unassigned by a tet.~~
+* ~~The Blackjack clause uses the card ID instead of value.~~
 
 ## References
 1. https://play.gamezop.com/p/gamepage/SyIZjp3GulZ
