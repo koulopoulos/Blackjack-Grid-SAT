@@ -36,28 +36,19 @@ In Blackjack Grid, a player places tetromino-like clusters of traditional playin
 
 ## Example Usage
 ```
-> Input the board size:
-> 6
+Blackjack Grid Solver
+> Input the board size: 6
+> Input the tets as CSV: AAA0, K452, 0077, 0984, 450Q, JJJ3
 
-> Input the number of tets for the game:
-> 2
+[['0' '0' '0' '0' '0' '9']
+ ['0' 'K' '4' '0' '8' '4']
+ ['0' '5' '2' '7' '7' '0']
+ ['0' 'J' 'J' '0' '4' '5']
+ ['0' 'J' '3' 'A' 'A' 'Q']
+ ['0' '0' '0' 'A' '0' '0']]
 
-> Input the tets (Use 0 for no card and X for 10)
-> AAAA
-> K900
-
-> [['0' '0' '0' '0' '0' '0']
->  ['0' '0' 'A' 'A' '0' '0']
->  ['K' '9' 'A' 'A' '0' '0']
->  ['0' '0' '0' '0' '0' '0']
->  ['0' '0' '0' '0' '0' '0']
->  ['0' '0' '0' '0' '0' '0']]
+Runtime: 0.15606081700000374s
 ```
-
-## Known Bugs
-* ~~Card-tets can wrap across one edge of the board to the other.~~
-* ~~Cells are not restricted to 0 if unassigned by a tet.~~
-* ~~The Blackjack clause uses the card ID instead of value.~~
 
 ## References
 1. https://play.gamezop.com/p/gamepage/SyIZjp3GulZ
