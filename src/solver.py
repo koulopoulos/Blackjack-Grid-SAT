@@ -38,6 +38,7 @@ def board_c(board, board_size):
             board: a list of Z3 integer variables representing the board cells
             board_size: the side length of the board (in cells)
 
+        
         Returns:
             A list of Z3 conjunctive clauses
     """
@@ -135,12 +136,13 @@ def assignment_c(rep, z, i, board, board_size):
                     for j in range(board_size**2)])
 
 
-def default_zero_c(tets, board):
+def default_zero_c(tets, board, board_size):
     """ Builds a Z3 clause which defaults unassigned board cell values to 0
 
         Args:
             tets: a list of Tets represented as strings
             board: a list of Z3 integer variables representing the board cells
+            board_size: the side length of the board (in cells)
 
         Returns:
             A Z3 conjunctive clause
@@ -201,11 +203,12 @@ def blackjack_c(board, board_size):
     return Or(c)
 
 
-def render_board(board):
+def render_board(board, board_size, model):
     """ Renders the given board to the console
 
         Args:
             board: the list of Z3 cell variables representing the board
+            model: something something Z3
 
         Return: None
     """
@@ -215,7 +218,7 @@ def render_board(board):
         10: "X", 11: "J", 12: "Q", 13: "K"
     }
     print(np.array(
-        [[card_repr[m.evaluate(board[i+j*board_size]).as_long()]
+        [[card_repr[model.evaluate(board[i+j*board_size]).as_long()]
             for i in range(board_size)]
             for j in range(board_size)]))
 
@@ -245,19 +248,19 @@ def input_tets():
 
 
 def solve(board, board_size, tets):
-    
+
     s = Solver()
     s.add(board_c(board, board_size))
     s.add(tets_c(tets, board, board_size))
     s.add(distinct_index_c(tets))
-    s.add(default_zero_c(tets, board))
+    s.add(default_zero_c(tets, board, board_size))
     s.add(blackjack_c(board, board_size))
 
     start = timeit.default_timer()
     if s.check() == sat:
         stop = timeit.default_timer()
         m = s.model()
-        render_board(board)
+        render_board(board, board_size, m)
         print(f"\nRuntime: {stop - start}s\n")
 
 
