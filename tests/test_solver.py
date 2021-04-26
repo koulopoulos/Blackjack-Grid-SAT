@@ -4,7 +4,6 @@ import unittest
 from z3 import *
 from src.solver import *
 
-
 class TestSolver(unittest.TestCase):
 
     def test_board_v(self):

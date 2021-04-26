@@ -47,6 +47,7 @@ Blackjack Grid Solver
  ['0' 'J' '3' 'A' 'A' 'Q']
  ['0' '0' '0' 'A' '0' '0']]
 
+Status: SAT
 Runtime: 0.15606081700000374s
 ```
 

@@ -208,7 +208,8 @@ def render_board(board, board_size, model):
 
         Args:
             board: the list of Z3 cell variables representing the board
-            model: something something Z3
+            board_size: the side length of the board (in cells)
+            model: the Z3 model of the clauses
 
         Return: None
     """
@@ -248,8 +249,18 @@ def input_tets():
 
 
 def solve(board, board_size, tets):
+    """ Attempts to solves the model with the given conditions
 
+        Args:
+            board: the list of Z3 cell variables representing the board
+            board_size: the side length of the board (in cells)
+            tets: a list of Tets represented as strings
+
+        Returns:
+            A boolean representing if the model was satisfiable or not
+    """
     s = Solver()
+
     s.add(board_c(board, board_size))
     s.add(tets_c(tets, board, board_size))
     s.add(distinct_index_c(tets))
@@ -261,7 +272,14 @@ def solve(board, board_size, tets):
         stop = timeit.default_timer()
         m = s.model()
         render_board(board, board_size, m)
-        print(f"\nRuntime: {stop - start}s\n")
+        print("\nStatus: SAT")
+        print(f"Runtime: {stop - start}s\n")
+        return True
+    else:
+        stop = timeit.default_timer()
+        print("Status: UNSAT")
+        print(f"Runtime: {stop - start}s\n")
+        return False
 
 
 if __name__ == "__main__":
